@@ -1,5 +1,5 @@
 function k = calculate_k_coefficients(param, base)
-    % Calculate the PU system coefficients based on meeting0627.pdf 
+    % Calculate the PU system coefficients
     
     % Mechanical coefficients
     % k1_bar: Torque constant effect on acceleration 

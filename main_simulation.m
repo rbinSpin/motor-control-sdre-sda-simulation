@@ -13,33 +13,51 @@ k = calculate_k_coefficients(param, base);
 
 %% 2. Simulation Settings
 dt = 1e-4; % 10kHz sampling
-t_end = 0.5;
+t_end = 1;
 t_vector = 0:dt:t_end;
 num_steps = length(t_vector);
 
 % Initial states [omega_e_pu; i_q_pu; i_d_pu]
-x = [0; 0; 0]; 
+x = [0; 0; 0];
 history = zeros(num_steps, 3);
 v_history = zeros(num_steps, 2); % To monitor vd, vq
 
 % SDRE Weights
-Q = diag([50, 10, 10]); % [we_err, iq_err, id_err]
-R = diag([1, 1]);           % [vq, vd]
+Q = diag([5000, 10, 10]); % [we_err, iq_err, id_err]
+R = diag([30, 30]);  % [vq, vd]
 
 %% 3. Main Simulation Loop
+% 設定斜坡參數
+final_omega_rpm = 000;       % 最終目標轉速
+ramp_time = 0.006;            % 預計在 ramp_time 秒內升到目標轉速
+ramp_slope = final_omega_rpm / ramp_time;
+
 for n = 1:num_steps
-    % --- A. Desired State (Constant Reference) ---
-    Te_target = 2.0; 
-    omega_ref_rpm = 900;
+    currentTime = t_vector(n);
     
-    % Get desired currents from MTPA
-    [id_hat, iq_hat] = mtpa_calculation(Te_target, param, base);
-    we_hat = (omega_ref_rpm * pi * param.p / 60) / base.wb; % Convert RPM to PU
+    % --- A. Desired State (Ramp Reference) ---
+    % 計算當前的需求轉速
+    if currentTime < ramp_time
+        omega_ref_rpm = ramp_slope * currentTime;
+    else
+        omega_ref_rpm = final_omega_rpm;
+    end
+    
+    % 將 RPM 轉換為標么值
+    we_hat = (omega_ref_rpm * pi * param.p / 60) / base.wb; 
+    
+    % 利用物理穩態平衡反推需要的轉矩
+    % 考慮到加速度項 (J*dw/dt)，斜坡上升時需要額外的轉矩
+    accel_torque_pu = (currentTime < ramp_time) * (param.J * (ramp_slope * pi * param.p / 60 / base.wb) / dt); 
+    Te_target = k.k2 * we_hat; % 基本克服摩擦力與負載
+    
+    % 計算對應的 id_hat, iq_hat
+    [id_hat, iq_hat] = mtpa_calculation(Te_target * base.Tb, param, base);
     x_hat = [we_hat; iq_hat; id_hat];
     
     % --- B. Feedforward Voltage (u_hat) ---
-    vq_hat = k.k4*iq_hat + k.k5*we_hat + k.k10*we_hat*id_hat;
-    vd_hat = k.k7*id_hat - k.k9*we_hat*iq_hat;
+    vq_hat = (k.k4*iq_hat + k.k5*we_hat + k.k10*we_hat*id_hat)/k.k6;
+    vd_hat = (k.k7*id_hat - k.k9*we_hat*iq_hat)/k.k8;
     u_hat = [vq_hat; vd_hat];
     
     % --- C. Construct A_bar Matrix (3x3) ---
