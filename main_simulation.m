@@ -14,13 +14,13 @@ k = calculate_k_coefficients(param, base);
 %% 2. Fixed-Point Settings
 % Define data types for signals and calculations
 % T_signal: For per-unit signals. Increased from 16 to 32 bits for higher precision.
-T_signal = numerictype('Signed', true, 'WordLength', 32, 'FractionLength', 28);
+T_signal = numerictype('Signed', true, 'WordLength', 32, 'FractionLength', 20);
 
 % T_matrix: For matrices. Increased from 32 to 48 bits.
-T_matrix = numerictype('Signed', true, 'WordLength', 48, 'FractionLength', 40);
+T_matrix = numerictype('Signed', true, 'WordLength', 48, 'FractionLength', 20);
 
 % T_prod: For products and accumulations. Increased from 32 to 48 bits.
-T_prod = numerictype('Signed', true, 'WordLength', 48, 'FractionLength', 44);
+T_prod = numerictype('Signed', true, 'WordLength', 48, 'FractionLength', 20);
 
 % Associate these types with a fimath object to control rounding and overflow behavior.
 % Rounding to nearest, saturate on overflow.

@@ -23,10 +23,12 @@ function P = sda_riccati_solver(A_in, B_in, Q_in, R_in, max_iter, T_matrix, FIMA
     I = fi(eye(size(A)), numerictype(1, 2, 0)); % Identity matrix fi(1)
     I_full = fi(eye(size(A)), T_matrix); % Full precision identity
     
-    gamma = fi(500, T_matrix); % Stabilization parameter
+    gamma_val = 500;
+    gamma = fi(gamma_val, T_matrix); % Stabilization parameter
 
     % Step 2: Initialization (Cayley Transform)
-    A_gamma = A - gamma * I_full;
+    % A_gamma = A - gamma*I 必須能完整表達 -500 左右的數值
+    A_gamma = fi(double(A) - gamma * eye(size(A_in)), T_matrix);
     
     % Pre-calculating common terms for efficiency
     % Replace inv() with fixed.qrMatrixSolve for fi support
