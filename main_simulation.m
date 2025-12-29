@@ -2,14 +2,24 @@
 clear; clc; close all;
 
 %% 1. Initialize Parameters
-param.R = 2.5; param.Ld = 18e-3; param.Lq = 32e-3; 
-param.lambda_m = 0.30175; param.p = 6; param.J = 0.00782; param.B = 0.02277;
+param.R = 2.5;
+param.Ld = 18e-3; 
+param.Lq = 32e-3; 
+param.lambda_m = 0.30175; 
+param.p = 6; 
+param.J = 0.00782; 
+param.B = 0.02277;
+param_array = [param.R param.Ld param.Lq param.lambda_m param.p param.J param.B];
 
-base.Ib = 10; base.Vb = 178.82; base.wb = 628;
+base.Ib = 10; 
+base.Vb = 178.82; 
+base.wb = 628;
 base.Tb = 12.814;
+base_array = [base.Ib base.Vb base.wb base.Tb];
 
 % Calculate PU coefficients (k1 ~ k11)
 k = calculate_k_coefficients(param, base);
+k_array = [k.k1 k.k2 k.k3 k.k4 k.k5 k.k6 k.k7 k.k8 k.k9 k.k10 k.k11];
 
 %% 2. Simulation Settings
 dt = 1e-4; % 10kHz sampling
@@ -48,7 +58,7 @@ for n = 1:num_steps
     
     % 利用物理穩態平衡反推需要的轉矩
     % 考慮到加速度項 (J*dw/dt)，斜坡上升時需要額外的轉矩
-    u_pu = pmsm_controller(x, we_hat, param, base, k, Q, R);
+    u_pu = pmsm_controller(x, we_hat);
     
     % --- F. Plant Dynamics (Motor Model) ---
     TL_pu = 0; % Assuming constant load torque

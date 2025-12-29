@@ -1,4 +1,4 @@
-function [id_ref, iq_ref] = mtpa_calculation(Te_ref, param, base)
+function [id_ref, iq_ref] = mtpa_calculation(Te_ref, base)
     % Calculate MTPA reference currents using a Look-Up Table (LUT).
     % This is the hardware-friendly approach to replace the 'roots' function.
     % The 'param' argument is unused but kept for interface compatibility.
@@ -68,6 +68,6 @@ function [id_ref, iq_ref] = mtpa_calculation(Te_ref, param, base)
     iq_ref_physical = iq_low + fraction * (iq_high - iq_low);
 
     % Convert physical values to Per-unit (PU) system
-    iq_ref = iq_ref_physical / base.Ib;
-    id_ref = id_ref_physical / base.Ib;
+    iq_ref = iq_ref_physical / base(1);
+    id_ref = id_ref_physical / base(1);
 end
