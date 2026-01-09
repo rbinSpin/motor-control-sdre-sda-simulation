@@ -51,7 +51,7 @@ u_hat = [vq_hat; vd_hat];
 
 % --- D. SDA Algorithm (Solving ARE) ---
 % The sda_riccati_solver is an iterative function. It needs to be HDL-compatible.
-P = sda_riccati_solver(A_bar, B, Q, R, 10); % 10 is max iterations
+P = sda_riccati_solver(A_bar, B, Q, R, 10, 500); % 10 is max iterations
 
 u_pu = calculate_control_output(R,B,P,x,x_hat,u_hat);
 end

@@ -1,4 +1,4 @@
-function P = sda_riccati_solver(A, B, Q, R, max_iter)
+function P = sda_riccati_solver(A, B, Q, R, max_iter, gamma)
     % SDA solver for A'P + PA - PBR^-1B'P + Q = 0
     % Based on SDA_FPGA計算步驟.pptx formulas
     
@@ -8,7 +8,6 @@ function P = sda_riccati_solver(A, B, Q, R, max_iter)
     G = B * inv_R * B';
     
     I = eye(size(A));
-    gamma = 500; % Stabilization parameter (Cayley transform)
     
     % Step 2: Initialization (Cayley Transform)
     % As seen in the PPTX: Initializing A0, G0, H0
@@ -16,41 +15,31 @@ function P = sda_riccati_solver(A, B, Q, R, max_iter)
     
     % Pre-calculating common terms for efficiency using HDL-compatible LU decomposition
     inv_A_gamma_t = inv3x3_lu_alaff_hdl(A_gamma');
+    blue = A_gamma' + Q*inv_A_gamma_t*G;
+    green = Q*inv_A_gamma_t;
+    red = G*inv3x3_lu_alaff_hdl(blue);
+    inv_A_gamma = inv3x3_lu_alaff_hdl(A_gamma);
     
-    W_interim = A_gamma - G * (inv_A_gamma_t * Q);
-    W = inv3x3_lu_alaff_hdl(W_interim);
-    
-    A0 = I + 2 * gamma * W;
-    G0 = 2 * gamma * W * G * inv_A_gamma_t;
-    H0 = 2 * gamma * (inv_A_gamma_t * Q) * W;
+    A0 = I + 2 * gamma * inv3x3_lu_alaff_hdl(blue);
+    G0 = 2 * gamma * inv_A_gamma * red;
+    H0 = 2 * gamma * inv3x3_lu_alaff_hdl(blue) * green;
     
     % Step 3: Doubling Iteration Loop
     Ak = A0; Gk = G0; Hk = H0;
     
-    % Use a persistent flag for convergence to be HDL-friendly
-    converged = false;
-    
     for k = 1:max_iter
-        % Only perform calculations if not yet converged
-        if ~converged
-            % Using the doubling formulas from your PPTX, with HDL-compatible inversion
-            inv_I_GH = inv3x3_lu_alaff_hdl(I + Gk * Hk);
-            
-            Ak_next = Ak * inv_I_GH * Ak;
-            Gk_next = Gk + Ak * inv_I_GH * Gk * Ak';
-            Hk_next = Hk + Ak' * Hk * inv_I_GH * Ak;
-            
-            % Update matrices
-            Ak = Ak_next;
-            Gk = Gk_next;
-            Hk = Hk_next;
-            
-            % Convergence check (Hardware-friendly version)
-            % Sum of absolute values instead of Frobenius norm
-            if sum(abs(Ak(:))) < 1e-10
-                converged = true;
-            end
-        end
+        % Using the doubling formulas from your PPTX, with HDL-compatible inversion
+        inv_I_GH = inv3x3_lu_alaff_hdl(I + Gk * Hk);
+        inv_I_HG = inv3x3_lu_alaff_hdl(I + Hk * Gk);
+        
+        Ak_next = Ak * inv_I_GH * Ak;
+        Gk_next = Gk + Ak * Gk * inv_I_HG * Ak';
+        Hk_next = Hk + Ak' * inv_I_HG * Hk * Ak;
+        
+        % Update matrices
+        Ak = Ak_next;
+        Gk = Gk_next;
+        Hk = Hk_next;
     end
     
     % The solution P is the converged Hk matrix

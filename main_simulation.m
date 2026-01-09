@@ -32,7 +32,7 @@ ref_history = zeros(num_steps, 1);
 
 %% 3. Main Simulation Loop
 final_omega_rpm = 900;       
-ramp_time = 0.0065;            
+ramp_time = 0.06;            
 ramp_slope = final_omega_rpm / ramp_time;
 
 for n = 1:num_steps
